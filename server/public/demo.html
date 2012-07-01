@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Web Audio API</title>
+    <!--[if lt IE 9]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <p>Web Audio API</p>
+    <div>
+      <p><button id="test-button">Test</button></p>
+    </div>
+
+    <script>
+      var context = null;
+      var kickBuffer = null;
+
+      function BufferLoader(urlList, callback) {
+        this.load = function () {
+          var bufferList = new Array();
+          for (var i = 0; i < urlList.length; ++i) {
+            loadSound(urlList[i], function (err, data) {
+              if (err) {
+                callback(err);
+              }
+              bufferList.push(data);
+              if (i == urlList.length) {
+                callback(null, bufferList);
+              }
+            });
+          }
+        };
+      }
+
+      window.addEventListener('load', initAudio, false);
+      function initAudio() {
+        try {
+          context = new webkitAudioContext();
+          var bufferLoader = new BufferLoader(['/sounds/kick.wav'], function (err, bufferList) {
+            if (err) {
+              throw err;
+            }
+            kickBuffer = bufferList[0];
+          });
+          bufferLoader.load();
+        } catch (e) {
+          console.log('Web Audio API is not supported by this browser!', e);
+        }
+      }
+
+      function loadSound(url, callback) {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+          decodeAudioData(request.response, callback);
+        };
+        request.onerror = function () {
+          callback('Failed to load sound:', 'XHR error');
+        };
+        request.send();
+      }
+
+      function decodeAudioData(encodedData, callback) {
+        context.decodeAudioData(encodedData, 
+        function(buffer) {
+          callback(null, buffer);
+        },
+        function (err) {
+          callback('Failed to decode audio data:', err);
+        });
+      }
+
+      function playSound(buffer) {
+        var source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.noteOn(0);
+      }
+
+      (function() {
+        var testButton = document.querySelector('#test-button');
+        testButton.addEventListener('click', function(e) {
+          playSound(kickBuffer);
+        }, false);
+      })();
+    </script>
+  </body>
+</html>
