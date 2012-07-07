@@ -76,8 +76,29 @@
       function playSound(buffer) {
         var source = context.createBufferSource();
         source.buffer = buffer;
-        source.connect(context.destination);
-        source.noteOn(0);
+
+        var osc = context.createOscillator();
+        osc.type = osc.SAWTOOTH;
+        osc.frequency.setValueAtTime(0, context.currentTime);
+        osc.frequency.linearRampToValueAtTime(440, context.currentTime + 10);
+        osc.frequency.linearRampToValueAtTime(0, context.currentTime + 50);
+
+        var foo = context.createJavaScriptNode(4096, 1, 1);
+        foo.onaudioprocess = function (e) {
+          var inp = e.inputBuffer.getChannelData(0)
+            , out = e.outputBuffer.getChannelData(0);
+          for (var i = 0; i < 4096; ++i) {
+            out[i] = inp[i];
+          }
+        };
+        
+        //source.connect(foo);
+        //foo.connect(context.destination);
+        //source.connect(context.destination);
+
+        //source.noteOn(0);
+
+        osc.connect(context.destination);
       }
 
       (function() {
